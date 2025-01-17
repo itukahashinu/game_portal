@@ -29,7 +29,7 @@
             </div>
             <div class="game-card" data-game="mahjong">
                 <h2>麻雀</h2>
-                <div class="game-preview mahjong-preview"></div>
+                <div class="game-preview mahjong-preview">🀄</div>
                 <button class="play-button" data-game="mahjong">プレイ</button>
             </div>
         </div>
@@ -48,6 +48,7 @@
                     const gameName = button.dataset.game;
                     loadGame(gameName).catch(error => {
                         console.error('Failed to load game:', error);
+                        alert(`ゲームの読み込みに失敗しました: ${error.message}`);
                     });
                 });
             });

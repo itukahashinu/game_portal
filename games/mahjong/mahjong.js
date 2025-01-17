@@ -1,7 +1,8 @@
-import { MahjongSet, findPairs, findChows, findPungs } from 'mahjong-tiles.js';
+import { Game } from '../../js/main.js';
+import { MahjongSet, findPairs, findChows, findPungs } from './mahjong-tiles.js';
 
-class MahjongGame {
-    constructor() {
+class MahjongGame extends Game {
+    initialize() {
         this.mahjongSet = new MahjongSet();
         this.playerHand = [];
         this.player2Hand = [];
@@ -19,25 +20,114 @@ class MahjongGame {
         this.gameInProgress = false;
         this.currentTurn = 'player'; // player, right, opponent, left
 
-        // DOM要素の取得
-        this.container = document.querySelector('.mahjong-container');
-        this.playerArea = document.querySelector('.player-area .hand');
-        this.playerDiscards = document.querySelector('.player-area .discarded-tiles');
-        this.opponentArea = document.querySelector('.opponent-area .hand');
-        this.opponentDiscards = document.querySelector('.opponent-area .discarded-tiles');
-        this.leftArea = document.querySelector('.left-area .hand');
-        this.leftDiscards = document.querySelector('.left-area .discarded-tiles');
-        this.rightArea = document.querySelector('.right-area .hand');
-        this.rightDiscards = document.querySelector('.right-area .discarded-tiles');
-        this.remainingTiles = document.querySelector('.remaining-tiles');
-        this.currentStatus = document.querySelector('.current-status');
+        this.createGameElements();
 
-        this.initialize();
+        return Promise.resolve();
     }
 
-    initialize() {
-        this.setupEventListeners();
-        this.setupControls();
+    start() {
+        this.startGame(true);
+    }
+
+    cleanup() {
+        this.container.innerHTML = '';
+    }
+
+    createGameElements() {
+        const gameContainer = document.createElement('div');
+        gameContainer.classList.add('mahjong-container');
+
+        // プレイヤーエリアの作成
+        const createPlayerArea = (className) => {
+            const area = document.createElement('div');
+            area.classList.add('player-area', className);
+            
+            const hand = document.createElement('div');
+            hand.classList.add('hand');
+            area.appendChild(hand);
+            
+            const discarded = document.createElement('div');
+            discarded.classList.add('discarded-tiles');
+            area.appendChild(discarded);
+            
+            return { area, hand, discarded };
+        };
+
+        // 各プレイヤーエリアの作成
+        const playerElements = createPlayerArea('player');
+        const opponentElements = createPlayerArea('opponent');
+        const leftElements = createPlayerArea('left');
+        const rightElements = createPlayerArea('right');
+
+        // 情報表示エリアの作成
+        const infoArea = document.createElement('div');
+        infoArea.classList.add('info-area');
+
+        const remainingTiles = document.createElement('div');
+        remainingTiles.classList.add('remaining-tiles');
+        infoArea.appendChild(remainingTiles);
+
+        const currentStatus = document.createElement('div');
+        currentStatus.classList.add('current-status');
+        infoArea.appendChild(currentStatus);
+
+        // アクションボタンの作成
+        const actionButtons = document.createElement('div');
+        actionButtons.classList.add('action-buttons');
+        
+        const buttons = ['discard', 'chii', 'pon', 'kan', 'riichi', 'tsumo', 'ron'].map(action => {
+            const button = document.createElement('button');
+            button.id = action;
+            button.textContent = action === 'discard' ? '打牌' : action.toUpperCase();
+            button.disabled = true;
+            return button;
+        });
+        
+        buttons.forEach(button => actionButtons.appendChild(button));
+        
+        // コントロールボタンの作成
+        const controls = document.createElement('div');
+        controls.classList.add('controls');
+        
+        const vsAIButton = document.createElement('button');
+        vsAIButton.id = 'vs-ai';
+        vsAIButton.textContent = 'AIと対戦';
+        
+        const vsHumanButton = document.createElement('button');
+        vsHumanButton.id = 'vs-human';
+        vsHumanButton.textContent = '人と対戦';
+        
+        controls.appendChild(vsAIButton);
+        controls.appendChild(vsHumanButton);
+
+        // 要素の組み立て
+        gameContainer.appendChild(infoArea);
+        gameContainer.appendChild(playerElements.area);
+        gameContainer.appendChild(opponentElements.area);
+        gameContainer.appendChild(leftElements.area);
+        gameContainer.appendChild(rightElements.area);
+        gameContainer.appendChild(actionButtons);
+        gameContainer.appendChild(controls);
+
+        this.container.appendChild(gameContainer);
+
+        // 要素の参照を保存
+        this.playerArea = playerElements.hand;
+        this.playerDiscards = playerElements.discarded;
+        this.opponentArea = opponentElements.hand;
+        this.opponentDiscards = opponentElements.discarded;
+        this.leftArea = leftElements.hand;
+        this.leftDiscards = leftElements.discarded;
+        this.rightArea = rightElements.hand;
+        this.rightDiscards = rightElements.discarded;
+        this.remainingTiles = remainingTiles;
+        this.currentStatus = currentStatus;
+
+        // イベントリスナーとコントロールの設定（タイミングを遅らせる）
+        setTimeout(() => {
+            this.setupEventListeners();
+            this.setupControls();
+        }, 0);
     }
 
     setupEventListeners() {
@@ -49,17 +139,18 @@ class MahjongGame {
             }
         });
 
-        document.querySelector('#chii').addEventListener('click', () => this.chii());
-        document.querySelector('#pon').addEventListener('click', () => this.pon());
-        document.querySelector('#kan').addEventListener('click', () => this.kan());
-        document.querySelector('#riichi').addEventListener('click', () => this.riichi());
-        document.querySelector('#tsumo').addEventListener('click', () => this.tsumo());
-        document.querySelector('#ron').addEventListener('click', () => this.ron());
+        document.getElementById('discard').addEventListener('click', () => this.confirmDiscard());
+        document.getElementById('chii').addEventListener('click', () => this.chii());
+        document.getElementById('pon').addEventListener('click', () => this.pon());
+        document.getElementById('kan').addEventListener('click', () => this.kan());
+        document.getElementById('riichi').addEventListener('click', () => this.riichi());
+        document.getElementById('tsumo').addEventListener('click', () => this.tsumo());
+        document.getElementById('ron').addEventListener('click', () => this.ron());
     }
 
     setupControls() {
-        const vsAIButton = document.querySelector('#vs-ai');
-        const vsHumanButton = document.querySelector('#vs-human');
+        const vsAIButton = document.getElementById('vs-ai');
+        const vsHumanButton = document.getElementById('vs-human');
 
         vsAIButton.addEventListener('click', () => {
             this.startGame(true);
@@ -117,7 +208,10 @@ class MahjongGame {
             tiles[index].classList.add('selected');
             
             // 捨て牌ボタンを有効化
-            document.querySelector('#discard').disabled = false;
+            const discardButton = document.getElementById('discard');
+            if (discardButton) {
+                discardButton.disabled = false;
+            }
         }
     }
 
@@ -125,7 +219,10 @@ class MahjongGame {
         if (this.selectedIndex === -1) return;
         
         this.discardTile(this.selectedIndex);
-        document.querySelector('#discard').disabled = true;
+        const discardButton = document.getElementById('discard');
+        if (discardButton) {
+            discardButton.disabled = true;
+        }
         
         // 次の手番へ
         this.nextTurn();
@@ -299,5 +396,4 @@ class MahjongGame {
     }
 }
 
-// ゲームの初期化
-new MahjongGame();
+export default MahjongGame;

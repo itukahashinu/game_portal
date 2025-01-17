@@ -278,6 +278,63 @@ button:hover {
 }
 
 /* 麻雀のスタイル */
+.mahjong-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #277714;
+    padding: 1rem;
+    color: white;
+}
+
+.info-area {
+    text-align: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.current-player {
+    font-size: 1.2em;
+    margin-bottom: 0.5rem;
+}
+
+.remaining-tiles {
+    font-size: 1.1em;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+}
+
+.player-area {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.hand {
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-bottom: 1rem;
+    min-height: 60px;
+}
+
+.discarded-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    justify-content: center;
+    min-height: 60px;
+}
+
 .mahjong-table {
     background: #277714;
     padding: 2rem;

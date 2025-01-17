@@ -1,4 +1,119 @@
-export class Othello {
+import { Game } from '../../js/main.js';
+
+class OthelloGame extends Game {
+    initialize() {
+        this.game = new Othello();
+        this.createBoard();
+        return Promise.resolve();
+    }
+
+    start() {
+        this.addEventListeners();
+    }
+
+    cleanup() {
+        this.removeEventListeners();
+        this.container.innerHTML = '';
+    }
+
+    createBoard() {
+        const container = document.createElement('div');
+        container.classList.add('othello-info');
+        
+        const statusText = document.createElement('div');
+        statusText.textContent = '黒の番です';
+        this.statusText = statusText;
+        container.appendChild(statusText);
+
+        const board = document.createElement('div');
+        board.classList.add('othello-board');
+        
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                const cell = document.createElement('div');
+                cell.classList.add('square');
+                cell.dataset.row = i;
+                cell.dataset.col = j;
+                board.appendChild(cell);
+            }
+        }
+        
+        this.board = board;
+        container.appendChild(board);
+        this.container.appendChild(container);
+        this.updateBoard();
+    }
+
+    updateBoard() {
+        const state = this.game.getState();
+        const cells = this.board.querySelectorAll('.square');
+        cells.forEach(cell => {
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            const value = state.board[row][col];
+            
+            cell.innerHTML = '';
+            if (value) {
+                const disc = document.createElement('div');
+                disc.classList.add('piece', value === 1 ? 'black' : 'white');
+                cell.appendChild(disc);
+            }
+        });
+        this.updateStatus();
+    }
+
+    updateStatus() {
+        const state = this.game.getState();
+        const counts = this.getCounts();
+        this.statusText.textContent = `${state.currentPlayer === 1 ? '黒' : '白'}の番です (黒: ${counts.black}個, 白: ${counts.white}個)`;
+    }
+
+    getCounts() {
+        const state = this.game.getState();
+        let black = 0, white = 0;
+        
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                if (state.board[i][j] === 1) black++;
+                else if (state.board[i][j] === 2) white++;
+            }
+        }
+        
+        return { black, white };
+    }
+
+    addEventListeners() {
+        this.clickHandler = this.handleClick.bind(this);
+        this.board.addEventListener('click', this.clickHandler);
+    }
+
+    removeEventListeners() {
+        if (this.clickHandler) {
+            this.board.removeEventListener('click', this.clickHandler);
+        }
+    }
+
+    handleClick(event) {
+        const cell = event.target.closest('.square');
+        if (!cell) return;
+
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+
+        if (this.game.makeMove(row, col)) {
+            this.updateBoard();
+            
+            if (this.game.isGameOver()) {
+                const counts = this.getCounts();
+                alert(`ゲーム終了！\n黒: ${counts.black}個\n白: ${counts.white}個\n${counts.black > counts.white ? '黒の勝ち！' : counts.black < counts.white ? '白の勝ち！' : '引き分け！'}`);
+            }
+        }
+    }
+}
+
+export default OthelloGame;
+
+class Othello {
     constructor() {
         this.board = Array(8).fill().map(() => Array(8).fill(null));
         this.currentPlayer = 1;  // 1: 黒, 2: 白

@@ -84,10 +84,10 @@ const gameManager = new GameManager();
 
 // ゲームの初期化
 async function initializeGames() {
-    await gameManager.registerGame('othello', './games/othello.js');
-    await gameManager.registerGame('chess', './games/chess.js');
-    await gameManager.registerGame('poker', './games/poker.js');
-    await gameManager.registerGame('mahjong', './games/mahjong.js');
+    await gameManager.registerGame('othello', '../games/othello/othello.js');
+    await gameManager.registerGame('chess', '../games/chess/chess.js');
+    await gameManager.registerGame('poker', '../games/poker/poker.js');
+    await gameManager.registerGame('mahjong', '../games/mahjong/mahjong.js');
 }
 
 // エクスポート

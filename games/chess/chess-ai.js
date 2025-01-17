@@ -1,4 +1,4 @@
-import { MinimaxAIPlayer } from '/js/games/utils/ai-player.js';
+import { MinimaxAIPlayer } from '../../js/games/utils/ai-player.js';
 
 export class ChessAI extends MinimaxAIPlayer {
     constructor(game, depth = 2) {
@@ -80,8 +80,12 @@ export class ChessAI extends MinimaxAIPlayer {
 
     // 次の手を決定
     async makeMove() {
+        this.isThinking = true;
         const moves = this.getValidMoves();
-        if (moves.length === 0) return null;
+        if (moves.length === 0) {
+            this.isThinking = false;
+            return null;
+        }
 
         let bestMove = null;
         let bestValue = -Infinity;
@@ -97,6 +101,7 @@ export class ChessAI extends MinimaxAIPlayer {
             }
         }
 
+        this.isThinking = false;
         return bestMove;
     }
 }

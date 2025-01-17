@@ -1,4 +1,4 @@
-import { Deck } from '../utils/cards.js';
+import { Deck } from '..cards.js';
 import { PokerAI } from 'poker-ai.js';
 
 class PokerGame {
@@ -284,4 +284,4 @@ class PokerGame {
     showMessage(message) {
         this.currentStatus.textContent = message;
     }
-
+}

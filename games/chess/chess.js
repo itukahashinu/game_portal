@@ -1,7 +1,8 @@
-import { ChessAI } from 'chess-ai.js';
+import { Game } from '../../js/main.js';
+import { ChessAI } from './chess-ai.js';
 
-class ChessGame {
-    constructor() {
+class ChessGame extends Game {
+    initialize() {
         this.board = Array(8).fill().map(() => Array(8).fill(null));
         this.currentPlayer = 'white';
         this.selectedPiece = null;
@@ -9,23 +10,53 @@ class ChessGame {
         this.moveHistory = [];
         this.isSimulation = false;
         this.gameInProgress = false;
-
-        // DOM要素の取得
-        this.container = document.querySelector('.chess-container');
-        this.boardElement = document.querySelector('.chess-board');
         
-        this.initialize();
-    }
-
-    initialize() {
-        this.setupBoard();
+        this.createBoard();
         this.setupInitialPieces();
         this.setupControls();
+        
+        return Promise.resolve();
+    }
+
+    start() {
+        this.gameInProgress = true;
+        this.currentPlayer = 'white';
+        this.updateStatus();
         this.renderBoard();
     }
 
-    setupBoard() {
-        this.boardElement.innerHTML = '';
+    cleanup() {
+        this.container.innerHTML = '';
+    }
+
+    createBoard() {
+        const container = document.createElement('div');
+        container.classList.add('chess-info');
+        
+        const statusText = document.createElement('div');
+        statusText.classList.add('current-player');
+        statusText.textContent = '現在の手番: 白';
+        this.statusText = statusText;
+        container.appendChild(statusText);
+
+        const controls = document.createElement('div');
+        controls.classList.add('controls');
+        
+        const vsAIButton = document.createElement('button');
+        vsAIButton.id = 'vs-ai';
+        vsAIButton.textContent = 'AIと対戦';
+        
+        const vsHumanButton = document.createElement('button');
+        vsHumanButton.id = 'vs-human';
+        vsHumanButton.textContent = '人と対戦';
+        
+        controls.appendChild(vsAIButton);
+        controls.appendChild(vsHumanButton);
+        container.appendChild(controls);
+
+        const board = document.createElement('div');
+        board.classList.add('chess-board');
+        
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const square = document.createElement('div');
@@ -33,9 +64,13 @@ class ChessGame {
                 square.dataset.row = row;
                 square.dataset.col = col;
                 square.addEventListener('click', () => this.handleSquareClick(row, col));
-                this.boardElement.appendChild(square);
+                board.appendChild(square);
             }
         }
+        
+        this.boardElement = board;
+        container.appendChild(board);
+        this.container.appendChild(container);
     }
 
     setupInitialPieces() {
@@ -72,7 +107,7 @@ class ChessGame {
                 square.innerHTML = '';
                 if (piece) {
                     const pieceElement = document.createElement('div');
-                    pieceElement.className = `piece ${piece.color} ${piece.type}`;
+                    pieceElement.className = `piece ${piece.color}`;
                     pieceElement.innerHTML = this.getPieceSymbol(piece);
                     square.appendChild(pieceElement);
                 }
@@ -88,6 +123,10 @@ class ChessGame {
                 }
             }
         }
+    }
+
+    updateStatus() {
+        this.statusText.textContent = `現在の手番: ${this.currentPlayer === 'white' ? '白' : '黒'}`;
     }
 
     getPieceSymbol(piece) {
@@ -112,8 +151,7 @@ class ChessGame {
                 this.movePiece(this.selectedPiece.row, this.selectedPiece.col, row, col);
                 this.selectedPiece = null;
                 this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
-                document.querySelector('.current-player').textContent = 
-                    `現在の手番: ${this.currentPlayer === 'white' ? '白' : '黒'}`;
+                this.updateStatus();
                 this.renderBoard();
 
                 // AIの手番
@@ -218,14 +256,14 @@ class ChessGame {
     }
 
     setupControls() {
-        const vsAIButton = document.querySelector('#vs-ai');
-        const vsHumanButton = document.querySelector('#vs-human');
+        const vsAIButton = document.getElementById('vs-ai');
+        const vsHumanButton = document.getElementById('vs-human');
 
         vsAIButton.addEventListener('click', () => {
             this.resetGame();
             this.gameInProgress = true;
             this.currentPlayer = 'white'; // プレイヤーは常に白
-            document.querySelector('.current-player').textContent = '現在の手番: 白';
+            this.updateStatus();
             vsAIButton.disabled = true;
             vsHumanButton.disabled = true;
             this.renderBoard();
@@ -235,7 +273,7 @@ class ChessGame {
             this.resetGame();
             this.gameInProgress = true;
             this.currentPlayer = 'white';
-            document.querySelector('.current-player').textContent = '現在の手番: 白';
+            this.updateStatus();
             vsAIButton.disabled = true;
             vsHumanButton.disabled = true;
             this.renderBoard();
@@ -249,7 +287,7 @@ class ChessGame {
         this.moveHistory = [];
         this.setupInitialPieces();
         this.renderBoard();
-        document.querySelector('.current-player').textContent = '現在の手番: 白';
+        this.updateStatus();
     }
 
     movePiece(fromRow, fromCol, toRow, toCol, isSimulation = false) {
@@ -278,8 +316,7 @@ class ChessGame {
         if (move) {
             this.movePiece(move.fromRow, move.fromCol, move.toRow, move.toCol);
             this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
-            document.querySelector('.current-player').textContent = 
-                `現在の手番: ${this.currentPlayer === 'white' ? '白' : '黒'}`;
+            this.updateStatus();
             this.renderBoard();
         }
     }
@@ -294,5 +331,4 @@ class ChessGame {
     }
 }
 
-// ゲームの初期化
-new ChessGame();
+export default ChessGame;
