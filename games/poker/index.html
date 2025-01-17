@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポーカー</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        .poker-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .poker-table {
+            background-color: #277234;
+            padding: 20px;
+            border-radius: 50px;
+            min-width: 800px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .player-area, .opponent-area {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px;
+        }
+
+        .card {
+            width: 80px;
+            height: 120px;
+            background-color: white;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+
+        .card.selected {
+            transform: translateY(-20px);
+        }
+
+        .card.back {
+            background-color: #b71234;
+            color: transparent;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .controls button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        .controls button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .game-info {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        #back-to-portal {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #666;
+            color: white;
+            cursor: pointer;
+        }
+
+        .bet-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chip-amount {
+            background-color: #fff;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <button id="back-to-portal" onclick="window.location.href='../../index.html'">ポータルに戻る</button>
+    <div class="poker-container">
+        <div class="poker-table">
+            <div class="opponent-area"></div>
+            <div class="player-area"></div>
+        </div>
+        <div class="game-info">
+            <div class="chip-amount">所持チップ: 1000</div>
+            <div class="current-status"></div>
+        </div>
+        <div class="controls">
+            <button id="vs-ai">AIと対戦</button>
+            <button id="vs-human">2人で対戦</button>
+            <div class="bet-controls" style="display: none;">
+                <button id="bet">ベット</button>
+                <button id="call">コール</button>
+                <button id="fold">フォールド</button>
+                <button id="exchange">カード交換</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="poker.js"></script>
+</body>
+</html>
