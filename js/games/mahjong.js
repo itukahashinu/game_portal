@@ -1,5 +1,5 @@
-import { Game } from '../main.js';
-import { MahjongSet } from './utils/mahjong-tiles.js';
+import { Game } from '/js/main.js';
+import { MahjongSet } from '/js/games/utils/mahjong-tiles.js';
 
 class Mahjong extends Game {
     constructor(container) {
@@ -10,7 +10,7 @@ class Mahjong extends Game {
         this.selectedIndex = -1;
     }
 
-    initialize() {
+    async initialize() {
         this.container.innerHTML = `
             <div class="mahjong-table">
                 <div class="discard-pile"></div>
@@ -54,6 +54,7 @@ class Mahjong extends Game {
         this.sortHand();
         this.renderGame();
         this.container.querySelector('.start-btn').disabled = true;
+        this.container.querySelector('.draw-btn').disabled = false;
     }
 
     sortHand() {
@@ -63,12 +64,18 @@ class Mahjong extends Game {
         });
     }
 
-    drawTile() {
+    async drawTile() {
         const tile = this.mahjongSet.draw();
         if (tile) {
             this.playerHand.push(tile);
             this.sortHand();
             this.renderGame();
+            
+            if (this.playerHand.length > 13) {
+                this.showMessage('不要な牌を選んで捨ててください');
+            }
+        } else {
+            this.showMessage('山札がありません');
         }
     }
 
@@ -93,6 +100,7 @@ class Mahjong extends Game {
         this.selectedIndex = -1;
         this.sortHand();
         this.renderGame();
+        this.showMessage('');
     }
 
     analyzeHand() {
@@ -240,7 +248,8 @@ class Mahjong extends Game {
     }
 
     start() {
-        // 特別な初期化が必要な場合はここに実装
+        this.mahjongSet.reset();
+        this.mahjongSet.shuffle();
     }
 
     cleanup() {

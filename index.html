@@ -15,29 +15,47 @@
             <div class="game-card" data-game="othello">
                 <h2>オセロ</h2>
                 <div class="game-preview othello-preview"></div>
-                <button onclick="loadGame('othello')">プレイ</button>
+                <button class="play-button" data-game="othello">プレイ</button>
             </div>
             <div class="game-card" data-game="chess">
                 <h2>チェス</h2>
                 <div class="game-preview chess-preview"></div>
-                <button onclick="loadGame('chess')">プレイ</button>
+                <button class="play-button" data-game="chess">プレイ</button>
             </div>
             <div class="game-card" data-game="poker">
                 <h2>ポーカー</h2>
                 <div class="game-preview poker-preview"></div>
-                <button onclick="loadGame('poker')">プレイ</button>
+                <button class="play-button" data-game="poker">プレイ</button>
             </div>
             <div class="game-card" data-game="mahjong">
                 <h2>麻雀</h2>
                 <div class="game-preview mahjong-preview"></div>
-                <button onclick="loadGame('mahjong')">プレイ</button>
+                <button class="play-button" data-game="mahjong">プレイ</button>
             </div>
         </div>
     </main>
     <div id="game-container" class="hidden">
-        <button id="back-to-menu" onclick="backToMenu()">メニューに戻る</button>
+        <button id="back-to-menu">メニューに戻る</button>
         <div id="game-area"></div>
     </div>
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="./js/initialization.js"></script>
+    <script type="module">
+        import { loadGame, backToMenu } from './js/app.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.play-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const gameName = button.dataset.game;
+                    loadGame(gameName).catch(error => {
+                        console.error('Failed to load game:', error);
+                    });
+                });
+            });
+
+            document.getElementById('back-to-menu').addEventListener('click', () => {
+                backToMenu();
+            });
+        });
+    </script>
 </body>
 </html>

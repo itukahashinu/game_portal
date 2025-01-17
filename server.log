@@ -1,0 +1,7 @@
+::ffff:127.0.0.1 - - [17/Jan/2025 12:49:08] "GET / HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [17/Jan/2025 12:49:08] "GET /js/initialization.js HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [17/Jan/2025 12:49:08] "GET /js/app.js HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [17/Jan/2025 12:49:08] "GET /js/main.js HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [17/Jan/2025 12:49:08] "GET /js/games/chess.js HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [17/Jan/2025 12:49:08] "GET /js/games/poker.js HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [17/Jan/2025 12:49:08] "GET /js/games/mahjong.js HTTP/1.1" 304 -

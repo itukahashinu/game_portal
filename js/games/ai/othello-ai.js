@@ -75,16 +75,21 @@ export class OthelloAI extends MinimaxAIPlayer {
 
     // 次の手を決定
     async makeMove() {
-        const moves = this.getValidMoves();
-        if (moves.length === 0) return null;
+        this.setState({ isThinking: true, lastMove: null });
+        const moves = await this.getValidMoves();
+        
+        if (moves.length === 0) {
+            this.setState({ isThinking: false });
+            return null;
+        }
 
         let bestMove = null;
         let bestValue = -Infinity;
 
         for (const move of moves) {
-            this.makeTemporaryMove(move);
-            const value = this.minimax(this.maxDepth - 1, false);
-            this.undoTemporaryMove(move);
+            await this.makeTemporaryMove(move);
+            const value = await this.minimax(this.maxDepth - 1, false);
+            await this.undoTemporaryMove(move);
 
             if (value > bestValue) {
                 bestValue = value;
@@ -92,6 +97,14 @@ export class OthelloAI extends MinimaxAIPlayer {
             }
         }
 
+        this.setState({ isThinking: false, lastMove: bestMove });
         return bestMove;
+    }
+
+    getState() {
+        return {
+            isThinking: this.isThinking || false,
+            lastMove: this.lastMove
+        };
     }
 }

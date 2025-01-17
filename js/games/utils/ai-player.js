@@ -23,23 +23,23 @@ export class MinimaxAIPlayer extends AIPlayer {
     }
 
     // ミニマックスアルゴリズムのメイン実装
-    minimax(depth, isMaximizing, alpha = -Infinity, beta = Infinity) {
+    async minimax(depth, isMaximizing, alpha = -Infinity, beta = Infinity) {
         if (depth === 0) {
-            return this.evaluatePosition();
+            return await this.evaluatePosition();
         }
 
-        const moves = this.getValidMoves();
+        const moves = await this.getValidMoves();
         
         if (moves.length === 0) {
-            return this.evaluatePosition();
+            return await this.evaluatePosition();
         }
 
         if (isMaximizing) {
             let maxEval = -Infinity;
             for (const move of moves) {
-                this.makeTemporaryMove(move);
-                const evaluation = this.minimax(depth - 1, false, alpha, beta);
-                this.undoTemporaryMove(move);
+                await this.makeTemporaryMove(move);
+                const evaluation = await this.minimax(depth - 1, false, alpha, beta);
+                await this.undoTemporaryMove(move);
                 maxEval = Math.max(maxEval, evaluation);
                 alpha = Math.max(alpha, evaluation);
                 if (beta <= alpha) break;
@@ -48,15 +48,28 @@ export class MinimaxAIPlayer extends AIPlayer {
         } else {
             let minEval = Infinity;
             for (const move of moves) {
-                this.makeTemporaryMove(move);
-                const evaluation = this.minimax(depth - 1, true, alpha, beta);
-                this.undoTemporaryMove(move);
+                await this.makeTemporaryMove(move);
+                const evaluation = await this.minimax(depth - 1, true, alpha, beta);
+                await this.undoTemporaryMove(move);
                 minEval = Math.min(minEval, evaluation);
                 beta = Math.min(beta, evaluation);
                 if (beta <= alpha) break;
             }
             return minEval;
         }
+    }
+
+    // AIの状態を取得
+    getState() {
+        return {
+            isThinking: false,
+            lastMove: null
+        };
+    }
+
+    // AIの状態を設定
+    setState(state) {
+        Object.assign(this, state);
     }
 
     // 現在の局面を評価（各ゲームで実装）

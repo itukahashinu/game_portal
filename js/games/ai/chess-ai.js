@@ -1,4 +1,4 @@
-import { MinimaxAIPlayer } from '../utils/ai-player.js';
+import { MinimaxAIPlayer } from '/js/games/utils/ai-player.js';
 
 export class ChessAI extends MinimaxAIPlayer {
     constructor(game, depth = 2) {

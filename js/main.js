@@ -28,29 +28,46 @@ class GameManager {
 
     async registerGame(name, gameModulePath) {
         try {
+            console.log(`Loading game module: ${gameModulePath}`);
             const gameModule = await import(gameModulePath);
+            if (!gameModule.default) {
+                throw new Error(`Game module ${name} does not have a default export`);
+            }
             this.games[name] = gameModule.default;
+            console.log(`Successfully registered game: ${name}`);
         } catch (error) {
             console.error(`Failed to load game: ${name}`, error);
+            throw error; // エラーを上位に伝播
         }
     }
 
     async loadGame(name) {
+        console.log(`Attempting to load game: ${name}`);
         if (this.currentGame) {
+            console.log('Cleaning up current game');
             this.currentGame.cleanup();
         }
 
         this.gameArea.innerHTML = '';
         
         if (!this.games[name]) {
-            console.error(`Game ${name} not found`);
-            return;
+            const error = new Error(`Game ${name} not found`);
+            console.error(error);
+            throw error;
         }
 
-        this.gameContainer.classList.remove('hidden');
-        this.currentGame = new this.games[name](this.gameArea);
-        await this.currentGame.initialize();
-        this.currentGame.start();
+        try {
+            console.log(`Initializing game: ${name}`);
+            this.gameContainer.classList.remove('hidden');
+            this.currentGame = new this.games[name](this.gameArea);
+            await this.currentGame.initialize();
+            this.currentGame.start();
+            console.log(`Game ${name} started successfully`);
+        } catch (error) {
+            console.error(`Failed to initialize game: ${name}`, error);
+            this.gameContainer.classList.add('hidden');
+            throw error;
+        }
     }
 
     backToMenu() {
@@ -67,18 +84,15 @@ const gameManager = new GameManager();
 
 // ゲームの初期化
 async function initializeGames() {
-    await gameManager.registerGame('othello', '/js/games/othello.js');
-    await gameManager.registerGame('chess', '/js/games/chess.js');
-    await gameManager.registerGame('poker', '/js/games/poker.js');
-    await gameManager.registerGame('mahjong', '/js/games/mahjong.js');
+    await gameManager.registerGame('othello', './games/othello.js');
+    await gameManager.registerGame('chess', './games/chess.js');
+    await gameManager.registerGame('poker', './games/poker.js');
+    await gameManager.registerGame('mahjong', './games/mahjong.js');
 }
 
-// 初期化
-window.addEventListener('DOMContentLoaded', () => {
-    initializeGames().catch(console.error);
-});
+// エクスポート
+export { initializeGames };
 
-// エクスポートする関数
 export const loadGame = async (name) => {
     await gameManager.loadGame(name);
 };

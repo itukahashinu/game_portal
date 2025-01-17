@@ -1,6 +1,6 @@
-import { Game } from '../main.js';
-import { Deck } from './utils/cards.js';
-import { PokerAI } from './ai/poker-ai.js';
+import { Game } from '/js/main.js';
+import { Deck } from '/js/games/utils/cards.js';
+import { PokerAI } from '/js/games/ai/poker-ai.js';
 
 class Poker extends Game {
     constructor(container) {
@@ -12,12 +12,12 @@ class Poker extends Game {
         this.opponentCredits = 100;
         this.currentBet = 0;
         this.opponentBet = 0;
-        this.gamePhase = 'bet'; // bet, draw, end
+        this.gamePhase = 'bet'; // bet, draw, showdown
         this.ai = new PokerAI(this);
         this.vsAI = false;
     }
 
-    initialize() {
+    async initialize() {
         this.container.innerHTML = `
             <div class="poker-table">
                 <div class="game-mode-selection">
@@ -40,6 +40,7 @@ class Poker extends Game {
                         <button class="bet-btn" data-amount="20">ベット 20</button>
                         <button class="deal-btn">配る</button>
                         <button class="draw-btn" disabled>カードを交換</button>
+                        <button class="fold-btn" disabled>降りる</button>
                     </div>
                     <div class="message"></div>
                 </div>
@@ -47,7 +48,6 @@ class Poker extends Game {
         `;
 
         this.setupModeSelection();
-
         this.setupEventListeners();
         this.updateDisplay();
     }
@@ -79,6 +79,7 @@ class Poker extends Game {
         const betButtons = this.container.querySelectorAll('.bet-btn');
         const dealButton = this.container.querySelector('.deal-btn');
         const drawButton = this.container.querySelector('.draw-btn');
+        const foldButton = this.container.querySelector('.fold-btn');
         
         betButtons.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -89,6 +90,7 @@ class Poker extends Game {
 
         dealButton.addEventListener('click', () => this.dealCards());
         drawButton.addEventListener('click', () => this.drawPhase());
+        foldButton.addEventListener('click', () => this.fold());
 
         this.container.querySelector('.player-hand').addEventListener('click', (e) => {
             if (this.gamePhase !== 'draw') return;
@@ -121,23 +123,47 @@ class Poker extends Game {
         }
         this.gamePhase = 'draw';
         
-        this.updateDisplay();
         this.container.querySelector('.draw-btn').disabled = false;
+        this.container.querySelector('.fold-btn').disabled = false;
+        this.updateDisplay();
     }
 
-    handleOpponentTurn() {
+    async handleOpponentTurn() {
         if (!this.vsAI) return;
 
-        // AIの交換する手札を決定
-        this.ai.makeMove().then(indicesToChange => {
-            if (indicesToChange && indicesToChange.length > 0) {
-                indicesToChange.forEach(index => {
-                    this.opponentHand[index] = this.deck.draw();
-                });
-            }
-            this.updateDisplay();
-            this.evaluateHands();
+        const indicesToChange = await this.ai.makeMove();
+        if (indicesToChange && indicesToChange.length > 0) {
+            indicesToChange.forEach(index => {
+                this.opponentHand[index] = this.deck.draw();
+            });
+        }
+        this.updateDisplay();
+    }
+
+    fold() {
+        if (this.gamePhase === 'bet') return;
+
+        if (this.vsAI) {
+            this.opponentCredits += this.currentBet + this.opponentBet;
+            this.showMessage('降りました。AIの勝利です。');
+        }
+        this.endRound();
+    }
+
+    async drawPhase() {
+        if (this.gamePhase !== 'draw') return;
+
+        const selectedCards = this.container.querySelectorAll('.card.selected');
+        selectedCards.forEach(cardElement => {
+            const index = Array.from(cardElement.parentNode.children).indexOf(cardElement);
+            this.playerHand[index] = this.deck.draw();
         });
+
+        await this.handleOpponentTurn();
+        
+        this.gamePhase = 'showdown';
+        this.evaluateHands();
+        this.updateDisplay();
     }
 
     evaluateHands() {
@@ -159,11 +185,10 @@ class Poker extends Game {
                 this.opponentCredits += this.opponentBet;
             }
         } else {
-            // 1人プレイモードの場合は既存の処理を使用
-            this.evaluatePlayerHand();
+            this.evaluatePlayerHand(playerScore);
         }
         
-        this.resetGame();
+        this.endRound();
     }
 
     evaluateHand(hand) {
@@ -177,9 +202,7 @@ class Poker extends Game {
         return 0; // ハイカード
     }
 
-    evaluatePlayerHand() {
-        const score = this.evaluateHand(this.playerHand);
-        
+    evaluatePlayerHand(score) {
         switch (score) {
             case 5:
                 this.win(this.currentBet * 5, 'フラッシュ！');
@@ -194,54 +217,37 @@ class Poker extends Game {
                 this.win(this.currentBet, 'ワンペア！');
                 break;
             default:
-                this.showMessage('ハイカード...');
-                this.resetGame();
-        }
-    }
-
-    drawPhase() {
-        if (this.gamePhase !== 'draw') return;
-
-        const selectedCards = this.container.querySelectorAll('.card.selected');
-        selectedCards.forEach(cardElement => {
-            const index = Array.from(cardElement.parentNode.children).indexOf(cardElement);
-            this.playerHand[index] = this.deck.draw();
-        });
-
-        this.gamePhase = 'end';
-        this.evaluateHand();
-        this.updateDisplay();
-    }
-
-    evaluateHand() {
-        const ranks = this.playerHand.map(card => card.rank);
-        const suits = this.playerHand.map(card => card.suit);
-        
-        // 簡易的な役判定（実際のポーカーではもっと複雑）
-        if (new Set(suits).size === 1) {
-            this.win(this.currentBet * 5, 'フラッシュ！');
-        } else if (new Set(ranks).size === 2) {
-            this.win(this.currentBet * 4, 'フルハウスまたは4カード！');
-        } else if (new Set(ranks).size === 3) {
-            this.win(this.currentBet * 2, '3カードまたは2ペア！');
-        } else if (new Set(ranks).size === 4) {
-            this.win(this.currentBet, 'ワンペア！');
-        } else {
-            this.showMessage('ハイカード...');
-            this.resetGame();
+                this.credits += Math.floor(this.currentBet / 2);
+                this.showMessage('ハイカード... ベットの半分を返還します。');
+                break;
         }
     }
 
     win(amount, message) {
         this.credits += amount;
         this.showMessage(`${message} +${amount}クレジット！`);
-        this.resetGame();
     }
 
-    resetGame() {
-        this.currentBet = 0;
+    endRound() {
         this.gamePhase = 'bet';
+        this.currentBet = 0;
+        this.opponentBet = 0;
+        this.playerHand = [];
+        this.opponentHand = [];
         this.container.querySelector('.draw-btn').disabled = true;
+        this.container.querySelector('.fold-btn').disabled = true;
+        this.updateDisplay();
+
+        // クレジットが0になった場合、ゲーム終了
+        if (this.credits <= 0 || (this.vsAI && this.opponentCredits <= 0)) {
+            this.gameOver();
+        }
+    }
+
+    gameOver() {
+        const winner = this.credits > 0 ? 'プレイヤー' : 'AI';
+        this.showMessage(`ゲーム終了！ ${winner}の勝利です！`);
+        this.container.querySelectorAll('button').forEach(btn => btn.disabled = true);
     }
 
     showMessage(message) {
@@ -249,7 +255,6 @@ class Poker extends Game {
     }
 
     updateDisplay() {
-        // クレジットとベット額の更新
         this.container.querySelector('.credits').textContent = `クレジット: ${this.credits}`;
         this.container.querySelector('.current-bet').textContent = `ベット: ${this.currentBet}`;
 
@@ -259,17 +264,19 @@ class Poker extends Game {
             this.container.querySelector('.opponent-bet').textContent = 
                 `AI ベット: ${this.opponentBet}`;
 
-            // AI手札の表示（伏せて表示）
             const opponentHandElement = this.container.querySelector('.opponent-hand');
             opponentHandElement.innerHTML = '';
             this.opponentHand.forEach(card => {
                 const cardElement = document.createElement('div');
-                cardElement.className = 'card back';
+                cardElement.className = `card ${this.gamePhase === 'showdown' ? '' : 'back'}`;
+                if (this.gamePhase === 'showdown') {
+                    cardElement.textContent = card.toString();
+                    cardElement.dataset.suit = card.suit;
+                }
                 opponentHandElement.appendChild(cardElement);
             });
         }
 
-        // プレイヤー手札の表示
         const handElement = this.container.querySelector('.player-hand');
         handElement.innerHTML = '';
         
@@ -277,10 +284,10 @@ class Poker extends Game {
             const cardElement = document.createElement('div');
             cardElement.className = 'card';
             cardElement.textContent = card.toString();
+            cardElement.dataset.suit = card.suit;
             handElement.appendChild(cardElement);
         });
 
-        // ボタンの有効/無効切り替え
         const betButtons = this.container.querySelectorAll('.bet-btn');
         betButtons.forEach(btn => {
             const amount = parseInt(btn.dataset.amount);
@@ -291,18 +298,6 @@ class Poker extends Game {
             this.gamePhase !== 'bet' || this.currentBet === 0;
     }
 
-    drawPhase() {
-        if (this.gamePhase !== 'draw') return;
-
-        const selectedCards = this.container.querySelectorAll('.card.selected');
-        selectedCards.forEach(cardElement => {
-            const index = Array.from(cardElement.parentNode.children).indexOf(cardElement);
-            this.playerHand[index] = this.deck.draw();
-        });
-
-        this.handleOpponentTurn();
-    }
-
     start() {
         this.deck.reset();
         this.deck.shuffle();
@@ -310,6 +305,13 @@ class Poker extends Game {
 
     cleanup() {
         this.container.innerHTML = '';
+        this.playerHand = [];
+        this.opponentHand = [];
+        this.credits = 100;
+        this.opponentCredits = 100;
+        this.currentBet = 0;
+        this.opponentBet = 0;
+        this.gamePhase = 'bet';
     }
 }
 

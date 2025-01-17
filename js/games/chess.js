@@ -1,5 +1,5 @@
-import { Game } from '../main.js';
-import { ChessAI } from './ai/chess-ai.js';
+import { Game } from '/js/main.js';
+import { ChessAI } from '/js/games/ai/chess-ai.js';
 
 class Chess extends Game {
     constructor(container) {
@@ -13,7 +13,7 @@ class Chess extends Game {
         this.gameInProgress = false;
     }
 
-    initialize() {
+    async initialize() {
         this.container.innerHTML = `
             <div class="chess-board"></div>
             <div class="chess-info">
@@ -105,7 +105,9 @@ class Chess extends Game {
         return symbols[piece.type];
     }
 
-    handleSquareClick(row, col) {
+    async handleSquareClick(row, col) {
+        if (!this.gameInProgress) return;
+        
         const piece = this.board[row][col];
 
         if (this.selectedPiece) {
@@ -115,14 +117,20 @@ class Chess extends Game {
                 this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
                 this.container.querySelector('.current-player').textContent = 
                     `現在の手番: ${this.currentPlayer === 'white' ? '白' : '黒'}`;
+                this.renderBoard();
+
+                // AIの手番
+                if (this.gameInProgress && this.currentPlayer === 'black' && !this.isSimulation) {
+                    await this.handleAIMove();
+                }
             } else {
                 this.selectedPiece = null;
+                this.renderBoard();
             }
         } else if (piece && piece.color === this.currentPlayer) {
             this.selectedPiece = { row, col };
+            this.renderBoard();
         }
-
-        this.renderBoard();
     }
 
     isValidMove(fromRow, fromCol, toRow, toCol) {
@@ -183,15 +191,21 @@ class Chess extends Game {
         vsAIButton.addEventListener('click', () => {
             this.resetGame();
             this.gameInProgress = true;
+            this.currentPlayer = 'white'; // プレイヤーは常に白
+            this.container.querySelector('.current-player').textContent = '現在の手番: 白';
             vsAIButton.disabled = true;
             vsHumanButton.disabled = true;
+            this.renderBoard();
         });
 
         vsHumanButton.addEventListener('click', () => {
             this.resetGame();
             this.gameInProgress = false;
+            this.currentPlayer = 'white';
+            this.container.querySelector('.current-player').textContent = '現在の手番: 白';
             vsAIButton.disabled = true;
             vsHumanButton.disabled = true;
+            this.renderBoard();
         });
     }
 
@@ -215,22 +229,24 @@ class Chess extends Game {
                 from: { row: fromRow, col: fromCol },
                 to: { row: toRow, col: toCol },
                 capturedPiece,
-                piece: this.board[toRow][toCol]
+                piece: this.board[toRow][toCol],
+                player: this.currentPlayer
             });
-
-            // AIの手番
-            if (this.gameInProgress && this.currentPlayer === 'black' && !this.isSimulation) {
-                setTimeout(() => this.handleAIMove(), 500);
-            }
         }
     }
 
     async handleAIMove() {
+        if (!this.gameInProgress || this.isSimulation) return;
+
+        const aiState = this.ai.getState();
+        if (aiState.isThinking) return;
+
         const move = await this.ai.makeMove();
         if (move) {
             this.movePiece(move.fromRow, move.fromCol, move.toRow, move.toCol);
-            this.currentPlayer = 'white';
-            this.container.querySelector('.current-player').textContent = '現在の手番: 白';
+            this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
+            this.container.querySelector('.current-player').textContent = 
+                `現在の手番: ${this.currentPlayer === 'white' ? '白' : '黒'}`;
             this.renderBoard();
         }
     }
@@ -240,7 +256,7 @@ class Chess extends Game {
             const lastMove = this.moveHistory.pop();
             this.board[lastMove.from.row][lastMove.from.col] = lastMove.piece;
             this.board[lastMove.to.row][lastMove.to.col] = lastMove.capturedPiece;
-            this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
+            this.currentPlayer = lastMove.player;
         }
     }
 
@@ -252,6 +268,7 @@ class Chess extends Game {
         this.gameInProgress = false;
         this.boardElement.innerHTML = '';
         this.moveHistory = [];
+        this.selectedPiece = null;
     }
 }
 

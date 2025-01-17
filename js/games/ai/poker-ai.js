@@ -1,4 +1,4 @@
-import { RuleBasedAIPlayer } from '../utils/ai-player.js';
+import { RuleBasedAIPlayer } from '/js/games/utils/ai-player.js';
 
 export class PokerAI extends RuleBasedAIPlayer {
     constructor(game) {

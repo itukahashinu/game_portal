@@ -1,12 +1,21 @@
-import { loadGame, backToMenu } from './main.js';
+import { loadGame as loadGameOriginal, backToMenu as backToMenuOriginal } from './main.js';
 
-// グローバルに関数を公開
-window.loadGame = (name) => {
-    loadGame(name).catch(error => {
+// ゲームのロード処理
+const loadGame = async (name) => {
+    try {
+        await loadGameOriginal(name);
+    } catch (error) {
         console.error('Failed to load game:', error);
-    });
+    }
 };
 
-window.backToMenu = () => {
-    backToMenu();
+// メニューに戻る処理
+const backToMenu = () => {
+    try {
+        backToMenuOriginal();
+    } catch (error) {
+        console.error('Failed to return to menu:', error);
+    }
 };
+
+export { loadGame, backToMenu };

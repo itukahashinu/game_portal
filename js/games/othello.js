@@ -12,7 +12,6 @@ class Othello extends Game {
         this.gameInProgress = false;
     }
 
-
     setupBoard() {
         this.boardElement.innerHTML = '';
         for (let row = 0; row < 8; row++) {
@@ -58,24 +57,6 @@ class Othello extends Game {
         }
     }
 
-    handleSquareClick(row, col) {
-        if (!this.isValidMove(row, col)) return;
-
-        this.makeMove(row, col);
-        this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
-        this.container.querySelector('.current-player').textContent = 
-            `現在の手番: ${this.currentPlayer === 'black' ? '黒' : '白'}`;
-        
-        this.renderBoard();
-
-        if (!this.hasValidMoves()) {
-            this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
-            if (!this.hasValidMoves()) {
-                this.endGame();
-            }
-        }
-    }
-
     isValidMove(row, col) {
         if (this.board[row][col]) return false;
 
@@ -115,7 +96,6 @@ class Othello extends Game {
             [1, -1],  [1, 0],  [1, 1]
         ];
 
-        // 手を記録
         const flippedPieces = [];
         
         this.board[row][col] = this.currentPlayer;
@@ -140,28 +120,67 @@ class Othello extends Game {
                 player: this.currentPlayer,
                 flippedPieces
             });
-            
-            // プレイヤーの手の後にAIの手番を処理
-            if (this.gameInProgress && this.currentPlayer === 'black') {
-                setTimeout(() => this.handleAIMove(), 500);
-            }
         }
     }
 
     async handleAIMove() {
+        if (!this.gameInProgress || this.isSimulation) return;
+
+        const aiState = this.ai.getState();
+        if (aiState.isThinking) return;
+
         const move = await this.ai.makeMove();
         if (move) {
             this.makeMove(move.row, move.col);
-            this.currentPlayer = 'black';
+            this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
             this.container.querySelector('.current-player').textContent = 
-                `現在の手番: 黒`;
+                `現在の手番: ${this.currentPlayer === 'black' ? '黒' : '白'}`;
             this.renderBoard();
 
+            // 次のプレイヤーが打てるかチェック
             if (!this.hasValidMoves()) {
-                this.currentPlayer = 'white';
+                this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
                 if (!this.hasValidMoves()) {
                     this.endGame();
+                    return;
                 }
+                this.container.querySelector('.current-player').textContent = 
+                    `現在の手番: ${this.currentPlayer === 'black' ? '黒' : '白'}`;
+            }
+        }
+    }
+
+    async handleSquareClick(row, col) {
+        if (!this.isValidMove(row, col)) return;
+
+        this.makeMove(row, col);
+        this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+        this.container.querySelector('.current-player').textContent = 
+            `現在の手番: ${this.currentPlayer === 'black' ? '黒' : '白'}`;
+        
+        this.renderBoard();
+
+        if (!this.hasValidMoves()) {
+            this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+            if (!this.hasValidMoves()) {
+                this.endGame();
+                return;
+            }
+        }
+
+        // AIモードでAIの手番の場合
+        if (this.gameInProgress && this.currentPlayer === 'white' && !this.isSimulation) {
+            await this.handleAIMove();
+            
+            // プレイヤーの手番をチェック
+            if (!this.hasValidMoves()) {
+                this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+                if (!this.hasValidMoves()) {
+                    this.endGame();
+                    return;
+                }
+                this.container.querySelector('.current-player').textContent = 
+                    `現在の手番: ${this.currentPlayer === 'black' ? '黒' : '白'}`;
             }
         }
     }
@@ -169,24 +188,12 @@ class Othello extends Game {
     undoLastMove() {
         if (this.isSimulation && this.moveHistory.length > 0) {
             const lastMove = this.moveHistory.pop();
-            // 最後に置いた駒を元に戻す
             this.board[lastMove.row][lastMove.col] = null;
-            // ひっくり返した駒を元に戻す
             lastMove.flippedPieces.forEach(piece => {
                 this.board[piece.row][piece.col] = piece.previousValue;
             });
-            // プレイヤーを戻す
             this.currentPlayer = lastMove.player;
         }
-    }
-
-    start() {
-        this.gameInProgress = true;
-    }
-
-    cleanup() {
-        this.gameInProgress = false;
-        this.boardElement.innerHTML = '';
     }
 
     hasValidMoves() {
@@ -211,9 +218,11 @@ class Othello extends Game {
         const winner = black > white ? '黒' : white > black ? '白' : '引き分け';
         this.container.querySelector('.current-player').textContent = 
             `ゲーム終了 - ${winner}の勝ち! (黒:${black} 白:${white})`;
+        
+        this.gameInProgress = false;
     }
 
-    initialize() {
+    async initialize() {
         this.container.innerHTML = `
             <div class="othello-board"></div>
             <div class="othello-info">
@@ -239,15 +248,21 @@ class Othello extends Game {
         vsAIButton.addEventListener('click', () => {
             this.resetGame();
             this.gameInProgress = true;
+            this.currentPlayer = 'black'; // 必ずプレイヤーが先手（黒）
+            this.container.querySelector('.current-player').textContent = '現在の手番: 黒';
             vsAIButton.disabled = true;
             vsHumanButton.disabled = true;
+            this.renderBoard();
         });
 
         vsHumanButton.addEventListener('click', () => {
             this.resetGame();
             this.gameInProgress = false;
+            this.currentPlayer = 'black';
+            this.container.querySelector('.current-player').textContent = '現在の手番: 黒';
             vsAIButton.disabled = true;
             vsHumanButton.disabled = true;
+            this.renderBoard();
         });
     }
 
@@ -260,28 +275,8 @@ class Othello extends Game {
         this.container.querySelector('.current-player').textContent = '現在の手番: 黒';
     }
 
-    handleSquareClick(row, col) {
-        if (!this.isValidMove(row, col)) return;
-
-        this.makeMove(row, col);
-        this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
-        this.container.querySelector('.current-player').textContent = 
-            `現在の手番: ${this.currentPlayer === 'black' ? '黒' : '白'}`;
-        
-        this.renderBoard();
-
-        if (!this.hasValidMoves()) {
-            this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
-            if (!this.hasValidMoves()) {
-                this.endGame();
-                return;
-            }
-        }
-
-        // AIの手番
-        if (this.gameInProgress && this.currentPlayer === 'white' && !this.isSimulation) {
-            this.handleAIMove();
-        }
+    start() {
+        this.gameInProgress = true;
     }
 
     cleanup() {
